@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,86 +7,49 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-    <link rel="manifest" href="site.webmanifest">
 </head>
-
 <body class="welcome-bg">
     <section class="d-flex align-items-center justify-content-center min-vh-100">
         <div class="glass-card p-4 p-md-5 text-center shadow-lg" style="max-width: 450px; width: 90%;">
             <h1 class="fw-bold mb-3">WiseWallet</h1>
             <p class="mb-4 opacity-75">Tu centro de control financiero inteligente.</p>
             <form id="login-form">
-                <input type="text" id="name" class="form-control custom-input mb-4 text-center"
-                    placeholder="¿Cómo te llamas?" required>
+                <input type="text" id="name" class="form-control custom-input mb-4 text-center" placeholder="¿Cómo te llamas?" required>
+                <select id="currency-select" class="form-select mb-3 border-0 bg-light p-3 shadow-none">
+                    <option value="C$">Córdoba (NIO) - C$</option>
+                    <option value="$">Dólar (USD) - $</option>
+                    <option value="€">Euro (EUR) - €</option>
+                    <option value="MXN$">Peso (MXN) - $</option>
+                </select>
                 <button type="submit" class="btn btn-info w-100 fw-bold py-3 text-white shadow">Comenzar Ahora</button>
             </form>
         </div>
     </section>
 
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <script>
-        document.getElementById('login-form').onsubmit = (e) => {
+        const db = new Dexie("MiAppFinanzas");
+        db.version(1).stores({
+            config: 'clave, valor',
+            transacciones: '++id, tipo, concepto, monto, fecha'
+        });
+
+        // Si ya está registrado, saltar al dashboard
+        window.onload = async () => {
+            const user = await db.config.get('nombreUsuario');
+            if (user) window.location.href = 'dashboard.html';
+        };
+
+        document.getElementById('login-form').onsubmit = async (e) => {
             e.preventDefault();
-            const userData = {
-                name: document.getElementById('name').value,
-                movements: [],
-                isLoggedIn: true
-            };
-            localStorage.setItem('finanzaData', JSON.stringify(userData));
+            const nombre = document.getElementById('name').value;
+            const moneda = document.getElementById('currency-select').value;
+
+            await db.config.put({ clave: 'nombreUsuario', valor: nombre });
+            await db.config.put({ clave: 'moneda', valor: moneda });
+
             window.location.href = 'dashboard.html';
         };
     </script>
-
-    <script>
-    let deferredPrompt;
-
-    // 1. Registrar el Service Worker (Obligatorio)
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js')
-            .then(() => console.log("Service Worker registrado"));
-    }
-
-    // 2. Capturar el evento de instalación
-    window.addEventListener('beforeinstallprompt', (e) => {
-        // Evita que Chrome muestre su propio banner pequeño abajo
-        e.preventDefault();
-        deferredPrompt = e;
-
-        // Mostrar una alerta personalizada al usuario
-        setTimeout(() => {
-            if (confirm("¿Quieres instalar WiseWallet en tu pantalla de inicio para un acceso más rápido?")) {
-                showInstallPromotion();
-            }
-        }, 2000); // Aparece a los 2 segundos de entrar
-    });
-
-    function showInstallPromotion() {
-        if (deferredPrompt) {
-            deferredPrompt.prompt(); // Muestra el cartel oficial de instalación
-            deferredPrompt.userChoice.then((choiceResult) => {
-                if (choiceResult.outcome === 'accepted') {
-                    console.log('El usuario aceptó la instalación');
-                }
-                deferredPrompt = null;
-            });
-        }
-    }
-
-    // Lógica de login que ya tenías
-    document.getElementById('login-form').onsubmit = (e) => {
-        e.preventDefault();
-        const userData = {
-            name: document.getElementById('name').value,
-            movements: [],
-            isLoggedIn: true
-        };
-        localStorage.setItem('finanzaData', JSON.stringify(userData));
-        window.location.href = 'dashboard.html';
-    };
-</script>
-
 </body>
-
 </html>

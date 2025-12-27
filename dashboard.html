@@ -57,7 +57,7 @@
 
         <div class="row">
             <div class="col-lg-4 mb-4">
-                <div class="card table-card p-4">
+                <div class="card table-card p-4 shadow-sm border-0">
                     <h5 class="fw-bold mb-4">Nuevo Movimiento</h5>
                     <form id="finance-form">
                         <select id="type" class="form-select mb-3 border-0 bg-light p-3 shadow-none">
@@ -72,11 +72,20 @@
             </div>
 
             <div class="col-lg-8">
-                <div class="card table-card p-4">
-                    <h5 class="fw-bold mb-4">Historial Reciente</h5>
+                <div class="card table-card p-4 shadow-sm border-0">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+                        <h5 class="fw-bold mb-3 mb-md-0">Historial de Movimientos</h5>
+                        
+                        <div class="d-flex gap-2">
+                            <input type="month" id="filter-month" class="form-control form-control-sm border-0 bg-light shadow-none">
+                            <button onclick="clearFilter()" class="btn btn-sm btn-outline-secondary rounded-pill">Ver Todos</button>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-hover align-middle">
-                            <tbody id="list-body"></tbody>
+                            <tbody id="list-body">
+                                </tbody>
                         </table>
                     </div>
                 </div>
@@ -84,6 +93,17 @@
         </div>
     </div>
 
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    <script src="db.js"></script>
     <script src="dashboard.js"></script>
+
+    <script>
+        // Función rápida para el logout
+        function logout() {
+            // Aquí puedes borrar el nombre si quieres que vuelva a loguearse
+            // db.config.clear(); 
+            window.location.href = "index.html";
+        }
+    </script>
 </body>
 </html>
