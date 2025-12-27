@@ -41,9 +41,51 @@
     </script>
 
     <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js');
-  }
+    let deferredPrompt;
+
+    // 1. Registrar el Service Worker (Obligatorio)
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js')
+            .then(() => console.log("Service Worker registrado"));
+    }
+
+    // 2. Capturar el evento de instalación
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Evita que Chrome muestre su propio banner pequeño abajo
+        e.preventDefault();
+        deferredPrompt = e;
+
+        // Mostrar una alerta personalizada al usuario
+        setTimeout(() => {
+            if (confirm("¿Quieres instalar WiseWallet en tu pantalla de inicio para un acceso más rápido?")) {
+                showInstallPromotion();
+            }
+        }, 2000); // Aparece a los 2 segundos de entrar
+    });
+
+    function showInstallPromotion() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt(); // Muestra el cartel oficial de instalación
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    console.log('El usuario aceptó la instalación');
+                }
+                deferredPrompt = null;
+            });
+        }
+    }
+
+    // Lógica de login que ya tenías
+    document.getElementById('login-form').onsubmit = (e) => {
+        e.preventDefault();
+        const userData = {
+            name: document.getElementById('name').value,
+            movements: [],
+            isLoggedIn: true
+        };
+        localStorage.setItem('finanzaData', JSON.stringify(userData));
+        window.location.href = 'dashboard.html';
+    };
 </script>
 
 </body>
