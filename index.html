@@ -51,5 +51,16 @@
             window.location.href = 'dashboard.html';
         };
     </script>
+
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Instalador de WiseWallet listo', reg))
+        .catch(err => console.log('Error al registrar instalador', err));
+    });
+  }
+</script>
+
 </body>
 </html>
