@@ -1,0 +1,62 @@
+:root {
+    --bg-gradient: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    --card-income: linear-gradient(135deg, #42e695 0%, #3bb2b8 100%);
+    --card-expense: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --card-balance: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+    --glass: rgba(255, 255, 255, 0.1);
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #f4f7f6;
+    color: #2d3436;
+}
+
+.welcome-bg {
+    background: var(--bg-gradient);
+}
+
+/* Efecto Glassmorphism */
+.glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 25px;
+    color: white;
+}
+
+.custom-input {
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    color: white !important;
+    padding: 12px;
+}
+
+.custom-input::placeholder { color: rgba(255, 255, 255, 0.6); }
+
+/* Dashboard Cards - Estilo Original */
+.card-stats {
+    color: white;
+    border-radius: 20px;
+    border: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.card-stats:hover { transform: translateY(-10px); box-shadow: 0 15px 30px rgba(0,0,0,0.2); }
+.card-income { background: var(--card-income); }
+.card-expense { background: var(--card-expense); }
+.card-balance { background: var(--card-balance); }
+
+.table-card {
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.btn-primary {
+    background: var(--card-balance);
+    border: none;
+    font-weight: 600;
+}
