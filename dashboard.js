@@ -1,14 +1,26 @@
-document.addEventListener('DOMContentLoaded', async () => {
-    const db = new Dexie("MiAppFinanzas");
-    db.version(1).stores({
-        config: 'clave, valor',
-        transacciones: '++id, tipo, concepto, monto, fecha'
-    });
+// CONFIGURACIÓN OFICIAL DE TU FIREBASE
+const firebaseConfig = {
+    apiKey: "AIzaSyALC-dHgu5KAgpr0G0d6VfDacHZw3hDJzs",
+    authDomain: "wisewallet-18e98.firebaseapp.com",
+    projectId: "wisewallet-18e98",
+    storageBucket: "wisewallet-18e98.firebasestorage.app",
+    messagingSenderId: "567441749008",
+    appId: "1:567441749008:web:ed69d680b4f8a61c068695",
+    measurementId: "G-84SYLF05Z9"
+};
 
+// Inicializar Firebase (Nube)
+firebase.initializeApp(firebaseConfig);
+const dbCloud = firebase.firestore();
+
+// Conectar con la base local que creaste en db.js
+// Asumimos que la variable se llama 'db'
+document.addEventListener('DOMContentLoaded', async () => {
+    
     const actualizarInterfaz = async () => {
-        // Recuperar moneda
+        // BUSCAR MONEDA O FORZAR C$
         const monedaDoc = await db.config.get('moneda');
-        const simbolo = monedaDoc ? monedaDoc.valor : 'C$'; // Si no hay, forzamos C$
+        const simbolo = (monedaDoc && monedaDoc.valor) ? monedaDoc.valor : 'C$';
         
         const registros = await db.transacciones.toArray();
         const listBody = document.getElementById('list-body');
@@ -19,58 +31,77 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         registros.reverse().forEach(reg => {
             const m = parseFloat(reg.monto) || 0;
-            const esIngreso = reg.tipo === 'ingreso' || reg.tipo === 'entrada';
-            if (esIngreso) inc += m; else exp += m;
+            const esInc = reg.tipo === 'ingreso' || reg.tipo === 'entrada';
+            if (esInc) inc += m; else exp += m;
 
             listBody.innerHTML += `
-                <tr class="align-middle border-transparent">
-                    <td><div class="rounded-circle p-2 text-center ${esIngreso ? 'bg-success text-white' : 'bg-danger text-white'}" style="width:35px; height:35px; line-height:18px"><i class="fas ${esIngreso?'fa-plus':'fa-minus'} small"></i></div></td>
+                <tr class="align-middle">
+                    <td><div class="rounded-circle p-2 text-center ${esInc ? 'bg-success text-white' : 'bg-danger text-white'}" style="width:35px; height:35px; line-height:18px"><i class="fas ${esInc?'fa-plus':'fa-minus'} small"></i></div></td>
                     <td><span class="fw-bold d-block text-capitalize">${reg.concepto}</span><small class="text-muted text-uppercase" style="font-size:10px">${reg.tipo}</small></td>
-                    <td class="${esIngreso?'text-success':'text-danger'} fw-bold text-end">
-                        ${esIngreso ? '+' : '-'}${simbolo}${m.toFixed(2)}
+                    <td class="${esInc?'text-success':'text-danger'} fw-bold text-end">
+                        ${esInc ? '+' : '-'}${simbolo}${m.toFixed(2)}
                     </td>
-                    <td class="text-end"><button onclick="borrar(${reg.id})" class="btn btn-link text-muted"><i class="fas fa-trash-alt"></i></button></td>
+                    <td class="text-end">
+                        <button onclick="borrarRegistro(${reg.id}, '${reg.fecha}')" class="btn btn-link text-muted p-0"><i class="fas fa-trash-alt"></i></button>
+                    </td>
                 </tr>`;
         });
 
-        // Totales con el símbolo correcto
+        // Actualizar los 3 cuadros grandes
         document.getElementById('inc-val').innerText = `${simbolo}${inc.toFixed(2)}`;
         document.getElementById('exp-val').innerText = `${simbolo}${exp.toFixed(2)}`;
-        
-        const bal = inc - exp;
-        document.getElementById('bal-val').innerText = `${simbolo}${bal.toFixed(2)}`;
-        
-        // Cambio de color dinámico del cuadro de Balance
-        const balCard = document.getElementById('bal-card');
-        if (balCard) balCard.style.backgroundColor = bal < 0 ? '#fdecea' : '#eafaf1';
+        document.getElementById('bal-val').innerText = `${simbolo}${(inc - exp).toFixed(2)}`;
     };
 
+    // GUARDAR EN AMBOS LADOS
     document.getElementById('finance-form').onsubmit = async (e) => {
         e.preventDefault();
-        await db.transacciones.add({
+        const userDoc = await db.config.get('nombreUsuario');
+        const nuevo = {
             tipo: document.getElementById('type').value,
             concepto: document.getElementById('concept').value,
             monto: parseFloat(document.getElementById('amount').value) || 0,
             fecha: new Date().toISOString()
-        });
+        };
+
+        await db.transacciones.add(nuevo); // Local
+        
+        if (userDoc) {
+            // Guardar en la nube automáticamente
+            await dbCloud.collection(userDoc.valor).doc(nuevo.fecha).set(nuevo);
+        }
+
         e.target.reset();
         actualizarInterfaz();
     };
 
-    window.borrar = async (id) => {
-        if(confirm("¿Eliminar este registro?")) {
+    // BORRAR EN AMBOS LADOS
+    window.borrarRegistro = async (id, fechaDoc) => {
+        if(confirm("¿Eliminar movimiento?")) {
+            const userDoc = await db.config.get('nombreUsuario');
             await db.transacciones.delete(id);
+            if (userDoc) {
+                await dbCloud.collection(userDoc.valor).doc(fechaDoc).delete();
+            }
             actualizarInterfaz();
         }
     };
 
+    // CARGA INICIAL Y SALUDO
     const userDoc = await db.config.get('nombreUsuario');
-    if (userDoc) document.getElementById('user-greeting').innerText = `Hola, ${userDoc.valor}`;
+    if (userDoc) {
+        document.getElementById('user-greeting').innerText = `Hola, ${userDoc.valor}`;
+        
+        // Si el navegador está vacío, traer de la nube
+        const totalLocal = await db.transacciones.count();
+        if (totalLocal === 0) {
+            const snapshot = await dbCloud.collection(userDoc.valor).get();
+            if (!snapshot.empty) {
+                const datosNube = snapshot.docs.map(doc => doc.data());
+                await db.transacciones.bulkAdd(datosNube);
+            }
+        }
+    }
     
     actualizarInterfaz();
 });
-
-// Función para el botón Salir
-function logout() {
-    window.location.href = 'index.html';
-}
