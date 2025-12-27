@@ -4,12 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WiseWallet | Bienvenido</title>
+    <link rel="manifest" href="site.webmanifest">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="welcome-bg">
-    <section class="d-flex align-items-center justify-content-center min-vh-100">
+    <section class="d-flex flex-column align-items-center justify-content-center min-vh-100">
+        
+        <div id="install-banner" class="glass-card p-3 mb-4 text-center shadow" style="display: none; max-width: 450px; width: 90%;">
+            <p class="mb-2 small">✨ Usa WiseWallet como una App en tu celular</p>
+            <button id="btn-install" class="btn btn-sm btn-light w-100 fw-bold shadow-sm">Instalar Ahora</button>
+        </div>
+
         <div class="glass-card p-4 p-md-5 text-center shadow-lg" style="max-width: 450px; width: 90%;">
             <h1 class="fw-bold mb-3">WiseWallet</h1>
             <p class="mb-4 opacity-75">Tu centro de control financiero inteligente.</p>
@@ -27,14 +34,15 @@
     </section>
 
     <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
+    
     <script>
+        // --- BASE DE DATOS DEXIE ---
         const db = new Dexie("MiAppFinanzas");
         db.version(1).stores({
             config: 'clave, valor',
             transacciones: '++id, tipo, concepto, monto, fecha'
         });
 
-        // Si ya está registrado, saltar al dashboard
         window.onload = async () => {
             const user = await db.config.get('nombreUsuario');
             if (user) window.location.href = 'dashboard.html';
@@ -44,23 +52,48 @@
             e.preventDefault();
             const nombre = document.getElementById('name').value;
             const moneda = document.getElementById('currency-select').value;
-
             await db.config.put({ clave: 'nombreUsuario', valor: nombre });
             await db.config.put({ clave: 'moneda', valor: moneda });
-
             window.location.href = 'dashboard.html';
         };
+
+        // --- LÓGICA DE INSTALACIÓN (PWA) ---
+        let deferredPrompt;
+        const installBanner = document.getElementById('install-banner');
+        const btnInstall = document.getElementById('btn-install');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Evita que aparezca la barra automática gris de Chrome
+            e.preventDefault();
+            // Guarda el evento
+            deferredPrompt = e;
+            // Muestra tu banner personalizado
+            installBanner.style.display = 'block';
+
+            btnInstall.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt(); // Muestra el cartel nativo
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`Usuario aceptó: ${outcome}`);
+                    deferredPrompt = null;
+                    installBanner.style.display = 'none';
+                }
+            });
+        });
+
+        // Ocultar si ya se instaló
+        window.addEventListener('appinstalled', () => {
+            installBanner.style.display = 'none';
+        });
+
+        // --- REGISTRO DEL SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Instalador listo'))
+                    .catch(err => console.log('Error de registro', err));
+            });
+        }
     </script>
-
-    <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Instalador de WiseWallet listo', reg))
-        .catch(err => console.log('Error al registrar instalador', err));
-    });
-  }
-</script>
-
 </body>
 </html>
